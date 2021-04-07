@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.css">
+    <title>About Autocrop</title>
+    <!-- Custom Styles -->
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        padding: 10px;
+      }
+      #cropperjs, #image-data-uri {
+        cursor: pointer;
+        color: rgba(135, 255, 200, 1);
+      }
+      img {
+        margin-bottom: 64px;
+      }
+    </style>
+  </head>
+
+  <body class="bg-dark text-light">
+    <div class="container text-center">
+      <img src="../assets/icons/icon_256x256.png" width="128" height="128">
+      <h2>Autocrop v0.1.0</h2>
+      <p>
+        Tool to quickly crop and resize images.<br>
+        - Powered by Electron v12.0.1 - 
+      </p>
+      <p>
+        Autocrop uses <span id="cropperjs">CropperJS</span> and <span id="image-data-uri">image-data-uri</span>.
+      </p>
+    </div>
+
+    <script>
+      const { ipcRenderer } = require("electron");
+
+      const cropperjsLink = document.getElementById("cropperjs");
+      const imagedatauriLink = document.getElementById("image-data-uri");
+
+      cropperjsLink.addEventListener("click", () => {
+        ipcRenderer.send("aboutwindow:openlink", "https://github.com/fengyuanchen/cropperjs");
+      });
+      imagedatauriLink.addEventListener("click", () => {
+        ipcRenderer.send("aboutwindow:openlink", "https://github.com/DiegoZoracKy/image-data-uri");
+      })
+    </script>
+  </body>
+</html>

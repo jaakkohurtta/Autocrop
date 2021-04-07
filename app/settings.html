@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline'">
+  <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.css">
+  <title>User Preferences</title>
+
+  <!-- Custem styles -->
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 10px;
+    }
+    #choose-export-location {
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="bg-dark">
+  <div class="container-fluid bg-dark text-light">
+    <h2 class="text-center">User Preferences</h2>
+    <form id="settings">
+
+      <!-- Export Location -->
+      <div class="form-row mb-3">
+        <label for="choose-export-location">
+          Export Location</label>
+        <input type="text" class="form-control" id="choose-export-location" placeholder="Browse.." readonly>
+      </div>
+      
+      <hr class="bg-light">
+      <!-- File name -->
+      <div class="form-group">
+        <label>
+          File name</label>
+        <div class="form-row pl-3">
+          <div class="form-check col-3 pt-2">
+            <input class="form-check-input" type="radio" id="file-name-original" name="filename-radios" value="original">
+            <label class="form-check-label" for="file-name-original">Use original</label>
+          </div>
+          <div class="form-check col-2 pt-2">
+            <input class="form-check-input" type="radio" id="file-name-custom" name="filename-radios" value="custom">
+            <label class="form-check-label" for="file-name-custom">Custom</label>
+          </div>
+          <input class="form-control col-6" type="text" id="file-name-custom-field" placeholder="Custom filename" disabled>
+          <input class="form-control col" type="text" placeholder=".jpg" disabled readonly>
+        </div>
+      </div>        
+  
+
+      <!-- File name suffix -->
+      <div class="form-group">
+        <label>
+          File name suffix</label>
+        <div class="form-row pl-3">
+          <div class="form-check col-2">
+            <input class="form-check-input" type="radio" id="suffix-none" name="filename-suffix-radios" value="none">
+            <label class="form-check-label" for="suffix-dimensions">None</label>
+          </div>
+          <div class="form-check col-10">
+            <input class="form-check-input" type="radio" id="suffix-dimensions" name="filename-suffix-radios" value="dimensions">
+            <label class="form-check-label" for="suffix-dimensions">Dimensions (e.g. yourfilename<strong>_666x666</strong>.jpg</label>
+          </div>
+        </div>        
+      </div>
+
+      <hr class="bg-light">
+      <!-- Open folder on export -->
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="show-in-folder" value="open">
+        <label class="form-check-label" for="show-in-folder">Show in folder</label>
+      </div>
+
+      <hr class="bg-light">
+      <!-- Apply / close buttons -->
+      <div class="form-row">
+        <input id="apply-btn" type="button" value="Apply" class="col">
+        <input id="cancel-btn" type="button" value="Cancel" class="col">
+      </div>
+      
+    </form>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require("electron");
+    const uiElement = require("./ui-element");
+    require("jquery");
+    require("bootstrap");
+
+    let userPreferences;
+
+    // UI Control
+    const jUI = (function() {
+      const [exportLocation, fileNameOriginal, fileNameCustom, fileNameCustomField, suffixNone, suffixDimensions, showInFolder, applyBtn, cancelBtn]
+          = ["choose-export-location", "file-name-original", "file-name-custom", "file-name-custom-field", "suffix-none", "suffix-dimensions", 
+             "show-in-folder", "apply-btn", "cancel-btn"].map(id => new uiElement(document.getElementById(id)));
+
+      function setCurrentPreferences(userPreferences) {
+        // Export path
+        exportLocation.value = userPreferences.path;
+
+        // File name
+        if(userPreferences.filename === "Use original") {
+          fileNameOriginal.element.checked = true;
+        } else {
+          fileNameCustom.element.checked = true;
+          fileNameCustomField.value = userPreferences.filename;
+        }
+
+        // Suffix
+        if(userPreferences.suffix === "None") {
+          suffixNone.element.checked = true;
+        } else {
+          suffixDimensions.element.checked = true;
+        }
+
+        // Show in folder
+        if(userPreferences.showinfolder) {
+          showInFolder.element.checked = true;
+        }
+
+      }
+
+      return {
+        exportLocation,
+        fileNameOriginal,
+        fileNameCustom,
+        fileNameCustomField,
+        suffixNone,
+        suffixDimensions,
+        showInFolder,
+        applyBtn, cancelBtn,
+        setCurrentPreferences
+      }
+    }());
+
+    // Get current user preferences
+    ipcRenderer.on("settings:userpreferences", (e, currentPreferences) => {
+      jUI.setCurrentPreferences(currentPreferences);
+    });
+    
+    // Event listener for choosing export location
+    jUI.exportLocation.element.addEventListener("click", () => {
+      ipcRenderer.invoke("settings:setexportpath")
+        .then((res) => {
+          console.log(res);
+          jUI.exportLocation.value = res});
+    });
+
+    // Event listener for custom choosing file name
+    jUI.fileNameCustom.element.addEventListener("click", () => {
+      jUI.fileNameCustomField.element.disabled = false;
+    });
+    jUI.fileNameOriginal.element.addEventListener("click", () => {
+      jUI.fileNameCustomField.element.disabled = true;
+      jUI.fileNameCustomField.value = "";
+    });
+
+    // Apply settings
+    jUI.applyBtn.element.addEventListener("click", () => {
+      let exportPath = jUI.exportLocation.value;
+
+      let exportFileName;
+      jUI.fileNameCustom.element.checked === true ? exportFileName = jUI.fileNameCustomField.value : exportFileName = "Use original";
+
+      let fileNameSuffix;
+      jUI.suffixNone.element.checked === true ? fileNameSuffix = "None" : fileNameSuffix = "Dimensions";
+
+      let showInFolder;
+      jUI.showInFolder.element.checked === true ? showInFolder = true : showInFolder = false; 
+      
+      userPreferences = {
+        path: exportPath,
+        filename: exportFileName,
+        suffix: fileNameSuffix,
+        showinfolder: showInFolder
+      };
+
+      // Send user preferences to main process
+      ipcRenderer.send("settings:applypreferences", userPreferences);
+    });
+
+    jUI.cancelBtn.element.addEventListener("click", () => {
+      ipcRenderer.send("settings:closewindow");
+    });
+  </script>
+</body>
+</html>

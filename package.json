@@ -1,0 +1,35 @@
+{
+  "name": "autocrop",
+  "productName": "Autocrop",
+  "version": "0.1.0",
+  "description": "App to crop and resize images",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "nodemon --exec electron .",
+    "package-mac": "electron-packager . --overwrite --platform=darwin --arch=x64 --icon=assets/icons/mac/icon.icns --prune=true --out=release-builds",
+    "package-win": "electron-packager . --overwrite --asar --platform=win32 --arch=ia32 --icon=assets/icons/win/icon.ico --prune=false --out=release-builds --version-string.CompanyName=CE --version-string.FileDescription=CE --version-string.ProductName=\"Autocrop\"",
+    "package-linux": "electron-packager . --overwrite --asar --platform=linux --arch=x64 --icon=assets/icons/linux/icon.png --prune=false --out=release-builds",
+    "create-installer-win": "node installers/windows/createinstaller.js"
+  },
+  "keywords": [
+    "image",
+    "resize",
+    "crop"
+  ],
+  "author": "Autocrop",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^12.0.1",
+    "electron-packager": "^15.2.0",
+    "electron-winstaller": "^5.0.0",
+    "nodemon": "^2.0.7"
+  },
+  "dependencies": {
+    "bootstrap": "^4.6.0",
+    "cropperjs": "^1.5.11",
+    "image-data-uri": "^2.0.1",
+    "jquery": "^3.6.0",
+    "popper.js": "^1.16.1"
+  }
+}
