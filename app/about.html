@@ -16,9 +16,10 @@
         height: 100vh;
         padding: 10px;
       }
-      #cropperjs, #image-data-uri {
+      #cropperjs, #image-data-uri, #autocrop-github {
         cursor: pointer;
         color: rgba(135, 255, 200, 1);
+        text-decoration: underline;
       }
       img {
         margin-bottom: 64px;
@@ -30,6 +31,9 @@
     <div class="container text-center">
       <img src="../assets/icons/icon_256x256.png" width="128" height="128">
       <h2>Autocrop v0.1.0</h2>
+      <p>
+        <span id="autocrop-github">https://github.com/jaakkohurtta/Autocrop</span>
+      </p>
       <p>
         Tool to quickly crop and resize images.<br>
         - Powered by Electron v12.0.1 - 
@@ -44,13 +48,17 @@
 
       const cropperjsLink = document.getElementById("cropperjs");
       const imagedatauriLink = document.getElementById("image-data-uri");
+      const autocropGitHub = document.getElementById("autocrop-github");
 
       cropperjsLink.addEventListener("click", () => {
         ipcRenderer.send("aboutwindow:openlink", "https://github.com/fengyuanchen/cropperjs");
       });
       imagedatauriLink.addEventListener("click", () => {
         ipcRenderer.send("aboutwindow:openlink", "https://github.com/DiegoZoracKy/image-data-uri");
-      })
+      });
+      autocropGitHub.addEventListener("click", () => {
+        ipcRenderer.send("aboutwindow:openlink", "https://github.com/jaakkohurtta/Autocrop");
+      });
     </script>
   </body>
 </html>
