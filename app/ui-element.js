@@ -10,7 +10,6 @@ module.exports = class uiElement {
     this.#defaultInnerHTML = elementti.innerHTML;
     this.#isDisabled = elementti.disabled;
     elementti.textContent !== undefined ? this.#defaultTextContent = elementti.textContent : this.#defaultTextContent = null;
-    // console.log("New UiElement createrd:" + this.element);
   }
 
   // Set & Get UI Element value
