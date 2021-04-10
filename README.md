@@ -6,7 +6,7 @@ Autocrop uses [CropperJS](https://github.com/fengyuanchen/cropperjs) and [image-
 ## Usage
 Select an image, set target dimensions, adjust crop and hit export.
 
-![Autocrop screenshot](./autocrop_screenshot.jpg?raw=true Autocrop)
+![Autocrop screenshot](https://github.com/jaakkohurtta/Autocrop/blob/main/autocrop_screenshot.jpg?raw=true)
 
 ## Planned features
 Planned features that may or may not happen include
