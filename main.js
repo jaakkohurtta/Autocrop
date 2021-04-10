@@ -1,11 +1,10 @@
- /*
+
  // Handle setupevents as quickly as possible
  const setupEvents = require('./installers/setupEvents')
  if (setupEvents.handleSquirrelEvent()) {
     // Squirrel event handled and app will exit in 1000ms, so don't do anything else
     return;
  }
-*/
 
 const { app, BrowserWindow, dialog,  Menu, ipcMain, shell } = require("electron");
 const path = require("path");
@@ -39,8 +38,9 @@ function createMainWindow() {
     height: 1000,
     backgroundColor: "#f5f5f5",
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: path.resolve(app.getAppPath(), "preload.js"),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
     icon: `${(__dirname)}/assets/icons/icon_256x256.png`  
   });
@@ -59,15 +59,17 @@ function createAboutWindow() {
     height: 512,
     resizable: false,
     backgroundColor: "#f5f5f5",
-    parent: "mainWindow",
+    parent: mainWindow,
+    modal: true,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: path.resolve(app.getAppPath(), "preload.js"),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
     icon: `${(__dirname)}/assets/icons/icon_256x256.png`  
   });
 
-  aboutWindow.removeMenu();
+  if(!isDev) aboutWindow.removeMenu();
   aboutWindow.loadFile("./app/about.html");
 }
 
@@ -81,13 +83,14 @@ function createSettingsWindow() {
     parent: mainWindow,
     modal: true,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: path.resolve(app.getAppPath(), "preload.js"),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
     icon: `${(__dirname)}/assets/icons/icon_256x256.png`  
   });
 
-  settingsWindow.removeMenu();
+  if(!isDev) settingsWindow.removeMenu();
   settingsWindow.loadFile("./app/settings.html")
     .then(() => {
       // Send current user preferences to settings window
@@ -143,7 +146,7 @@ const menu = [
 //#region INTER PROCESS COMMUNICATIONS
 
 // Export image
-ipcMain.on("image:data", (e, imageData) => {
+ipcMain.on("main:exportimage", (e, imageData) => {
   // Setting output location from user preferences
   let outputPath = `${userPreferences.path}\\${exportFileName}.jpg`;
   // Write imagedata to file
@@ -152,7 +155,7 @@ ipcMain.on("image:data", (e, imageData) => {
       if(userPreferences.showinfolder === true) {
         shell.openPath(userPreferences.path);
       }
-      mainWindow.webContents.send("alert:imagedone", `Image exported to ${res}`);
+      mainWindow.webContents.send("alert:imageready", `Image exported to ${res}`);
       if(isDev) {
         console.log("Image exported to " + res);
       }
@@ -160,7 +163,7 @@ ipcMain.on("image:data", (e, imageData) => {
 });
 
 // Get source file name/target dimensions and set the export file name string
-ipcMain.handle("settings:sourcefilename",  (e, data) => {  
+ipcMain.on("main:setexportfilename",  (e, data) => {  
   
   if(userPreferences.filename === "Use original") {
     // Cut the extension from file name
@@ -174,40 +177,34 @@ ipcMain.handle("settings:sourcefilename",  (e, data) => {
   if(userPreferences.suffix === "Dimensions") {
     exportFileName += data.suffix;
   }
-
-  return ` ${userPreferences.path}\\${exportFileName}.jpg`;
+  mainWindow.webContents.send("main:updateoutputinfo", `${userPreferences.path}\\${exportFileName}.jpg`); // Send path back to settings window
 });
 
 // Set the export path
-ipcMain.handle("settings:setexportpath", async () => {  
+ipcMain.on("settings:setexportpath", async () => {  
     let exportPath = new Promise((resolve, reject) => {
       dialog.showOpenDialog(settingsWindow, { title: "Choose export location", properties: ["openDirectory"]})
         .then(res => resolve(res.filePaths))
         .catch(err => reject(err));
     });
 
-    let result = await exportPath;
-    return result; // Send export path back to settingsWindow
-});
-
-ipcMain.handle("settings:outputinfo", () => {
-  return ` ${userPreferences.path}`;
+    settingsWindow.webContents.send("settings:getexportpath", await exportPath); // Send export path back to settingsWindow
 });
 
 // Apply user preferences
-ipcMain.on("settings:applypreferences", (e, appliedUserPreferences) => {
-  userPreferences = appliedUserPreferences;
+ipcMain.on("settings:applypreferences", (e, newPreferences) => {
+  userPreferences = newPreferences;
   saveUserPreferences();
   settingsWindow.close();
 });
 
 // Close settings window
-ipcMain.on("settings:closewindow", () => {
+ipcMain.on("settings:cancelpreferences", () => {
   settingsWindow.close();
 });
 
 // Open links in default browser
-ipcMain.on("aboutwindow:openlink", (e, link) => {
+ipcMain.on("main:openexternal", (e, link) => {
   shell.openExternal(link);
 });
 //#endregion

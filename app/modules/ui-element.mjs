@@ -1,4 +1,4 @@
-module.exports = class uiElement {
+export class uiElement {
   #defaultClassList;
   #defaultTextContent;
   #defaultInnerHTML;

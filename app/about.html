@@ -30,7 +30,7 @@
   <body class="bg-dark text-light">
     <div class="container text-center">
       <img src="../assets/icons/icon_256x256.png" width="128" height="128">
-      <h2>Autocrop v0.1.0</h2>
+      <h2>Autocrop v0.1.1</h2>
       <p>
         <span id="autocrop-github">https://github.com/jaakkohurtta/Autocrop</span>
       </p>
@@ -44,20 +44,18 @@
     </div>
 
     <script>
-      const { ipcRenderer } = require("electron");
-
       const cropperjsLink = document.getElementById("cropperjs");
       const imagedatauriLink = document.getElementById("image-data-uri");
       const autocropGitHub = document.getElementById("autocrop-github");
 
       cropperjsLink.addEventListener("click", () => {
-        ipcRenderer.send("aboutwindow:openlink", "https://github.com/fengyuanchen/cropperjs");
+        ipc.openExternal("https://github.com/fengyuanchen/cropperjs");
       });
       imagedatauriLink.addEventListener("click", () => {
-        ipcRenderer.send("aboutwindow:openlink", "https://github.com/DiegoZoracKy/image-data-uri");
+        ipc.openExternal("https://github.com/DiegoZoracKy/image-data-uri");
       });
       autocropGitHub.addEventListener("click", () => {
-        ipcRenderer.send("aboutwindow:openlink", "https://github.com/jaakkohurtta/Autocrop");
+        ipc.openExternal("https://github.com/jaakkohurtta/Autocrop");
       });
     </script>
   </body>

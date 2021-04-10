@@ -30,9 +30,9 @@
 
       <!-- Export Location -->
       <div class="form-row mb-3">
-        <label for="choose-export-location">
+        <label for="export-location">
           Export Location</label>
-        <input type="text" class="form-control" id="choose-export-location" placeholder="Browse.." readonly>
+        <input type="text" class="form-control" id="export-location" placeholder="Browse.." readonly>
       </div>
       
       <hr class="bg-light">
@@ -88,18 +88,18 @@
     </form>
   </div>
 
-  <script>
-    const { ipcRenderer } = require("electron");
-    const uiElement = require("./ui-element");
-    require("jquery");
-    require("bootstrap");
+
+  <!-- <script src="./ui-element.js"></script> -->
+  <script type="module">
+    import { uiElement } from "./modules/ui-element.mjs";
 
     let userPreferences;
 
     // UI Control
     const jUI = (function() {
+
       const [exportLocation, fileNameOriginal, fileNameCustom, fileNameCustomField, suffixNone, suffixDimensions, showInFolder, applyBtn, cancelBtn]
-          = ["choose-export-location", "file-name-original", "file-name-custom", "file-name-custom-field", "suffix-none", "suffix-dimensions", 
+          = ["export-location", "file-name-original", "file-name-custom", "file-name-custom-field", "suffix-none", "suffix-dimensions", 
              "show-in-folder", "apply-btn", "cancel-btn"].map(id => new uiElement(document.getElementById(id)));
 
       function setCurrentPreferences(userPreferences) {
@@ -141,19 +141,19 @@
       }
     }());
 
-    // Get current user preferences
-    ipcRenderer.on("settings:userpreferences", (e, currentPreferences) => {
+    ipc.getPreferences((currentPreferences) => {
       jUI.setCurrentPreferences(currentPreferences);
     });
     
     // Event listener for choosing export location
-    jUI.exportLocation.element.addEventListener("click", () => {
-      ipcRenderer.invoke("settings:setexportpath")
-        .then((res) => {
-          console.log(res);
-          jUI.exportLocation.value = res});
+    jUI.exportLocation.element.addEventListener("click", () => { 
+      ipc.setExportPath();
+      ipc.getExportPath((path) => {
+        jUI.exportLocation.value = path;
+      });
     });
 
+ 
     // Event listener for custom choosing file name
     jUI.fileNameCustom.element.addEventListener("click", () => {
       jUI.fileNameCustomField.element.disabled = false;
@@ -184,11 +184,11 @@
       };
 
       // Send user preferences to main process
-      ipcRenderer.send("settings:applypreferences", userPreferences);
+      ipc.applyPreferences(userPreferences);
     });
 
     jUI.cancelBtn.element.addEventListener("click", () => {
-      ipcRenderer.send("settings:closewindow");
+      ipc.cancelPreferences();
     });
   </script>
 </body>

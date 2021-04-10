@@ -1,8 +1,7 @@
-const $ = require("jquery");
-const uiElement = require("./ui-element");
-const cropperJS = require("cropperjs");
-const { ipcRenderer } = require("electron");
-require("bootstrap");
+import { uiElement } from "./modules/ui-element.mjs";
+import Cropper from "../node_modules/cropperjs/dist/cropper.esm.js";
+
+const ipc = window.ipc;
 
 // UI
 const jUI = (function() {
@@ -66,11 +65,11 @@ const App = (function() {
   let cropper;
   
   // Listen
-  ipcRenderer.on("alert:imagedone", (e, msg) => {
+  ipc.alertImageReady((msg) => {
     jUI.showAlert(msg, "bg-success");
   });
 
-  ipcRenderer.on("alert:settingssaved", (e, data) => {
+  ipc.alertSettingsSaved((data) => {
     jUI.showAlert(data.msg, "bg-success");
     jUI.updateOutputInfo(data.outputinfo);
   });
@@ -93,7 +92,7 @@ const App = (function() {
 
       // If cropper is undefined create new cropper from image..
       if(cropper === undefined) {
-        cropper = new cropperJS(jUI.imgElement.element, {
+        cropper = new Cropper(jUI.imgElement.element, {
           autoCrop: false,
           cropBoxResizable: false,
           zoomable: false,
@@ -163,15 +162,15 @@ const App = (function() {
               // Set crop box
               this.cropper.crop();
               this.cropper.setCropBoxData({ "left": canvasData.left, "top": canvasData.top, "width": cropWidth*scaleFactor, "height": cropHeight*scaleFactor });
-
-              // Send source file name+suffix to main process and update output info in return
-              ipcRenderer.invoke("settings:sourcefilename", { 
-                sourceFileName: imgName, 
-                suffix: `_${targetWidth}x${targetHeight}` })
-              .then(res => { 
-                jUI.updateOutputInfo(res);
-              });
               
+              // Send source file name+suffix to main process and update output info in return
+              ipc.setExportFileName({ 
+                sourceFileName: imgName, 
+                suffix: `_${targetWidth}x${targetHeight}` 
+                });
+              ipc.updateOutputInfo((info) => {
+                jUI.updateOutputInfo(info);
+              });
             });
 
             // Event listener for export button
@@ -188,7 +187,7 @@ const App = (function() {
                 }).toDataURL("image/jpg", 1);
 
                 // Send cropped image data to main process
-                ipcRenderer.send("image:data", croppedImage);
+                ipc.exportImage(croppedImage);
               }
             });  
           }
