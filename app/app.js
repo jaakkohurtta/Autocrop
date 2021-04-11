@@ -5,10 +5,10 @@ const ipc = window.ipc;
 
 // UI
 const jUI = (function() {
-  const [fileInfo, alertMsg, selectBtn, sourceImg, imgContainer, setDimensionBtn, exportBtn, imageWidth, imageHeight, imageAspectRatio, 
+  const [fileInfo, alertMsg, selectBtn, sourceImg, imgContainer, setDimensionsBtn, exportBtn, imageWidth, imageHeight, imageAspectRatio, 
         targetWidth, targetHeight, targetAspectRatio, cropWidth, cropHeight, cropAspectRatio, outputInfo] = 
         ["file-info", "alert-msg", "select-btn", "source-img", "img-container", "set-dimensions-btn", "export-btn", "image-width", "image-height", "image-aspect-ratio", "target-width", "target-height", "target-aspect-ratio", "crop-width", "crop-height", "crop-aspect-ratio", "output-info"].map(id => new uiElement(document.getElementById(id)));
-  const imgElement = new uiElement(document.createElement("img"));
+  let imgElement = new uiElement(document.createElement("img"));
 
   function showAlert(msg, className) {
     alertMsg.element.classList.add(className);
@@ -29,6 +29,7 @@ const jUI = (function() {
   }
 
   function reset() {
+    // imgContainer.reset();
     imageWidth.reset();
     imageHeight.reset();
     imageAspectRatio.reset();
@@ -39,8 +40,8 @@ const jUI = (function() {
     cropHeight.reset();
     cropAspectRatio.reset();
     outputInfo.reset();
-    exportBtn.element.classList.add("disabled");
-    exportBtn.element.disabled = true;
+    exportBtn.reset();
+    setDimensionsBtn.reset();
   }
 
   return {
@@ -48,7 +49,7 @@ const jUI = (function() {
     alertMsg,
     sourceImg,
     imgContainer,
-    setDimensionBtn, selectBtn, exportBtn, 
+    setDimensionsBtn, selectBtn, exportBtn, 
     imageWidth, imageHeight, imageAspectRatio,
     targetWidth, targetHeight, targetAspectRatio,
     cropWidth, cropHeight, cropAspectRatio,
@@ -61,8 +62,10 @@ const jUI = (function() {
 
 // App
 const App = (function() {
-  // Variable for our cropper
-  let cropper;
+
+  let cropper,
+      imgName,
+      imgPath;
   
   // Listen
   ipc.alertImageReady((msg) => {
@@ -84,8 +87,8 @@ const App = (function() {
   // Event listener for select button
   jUI.selectBtn.element.addEventListener("click", () => {
     try {
-      const imgPath = jUI.sourceImg.element.files[0].path;
-      const imgName = jUI.sourceImg.element.files[0].name;
+      imgPath = jUI.sourceImg.element.files[0].path;
+      imgName = jUI.sourceImg.element.files[0].name;
 
       jUI.imgElement.element.setAttribute("src", imgPath);
       jUI.imgContainer.element.appendChild(jUI.imgElement.element);
@@ -99,8 +102,8 @@ const App = (function() {
           scalable: false,
           viewMode: 3,
           ready() {
-            const imgData = cropper.getImageData();
-            const canvasData = cropper.getCanvasData();
+            let imgData = cropper.getImageData();
+            let canvasData = cropper.getCanvasData();
 
             // Scale factor to scale crop box
             let scaleFactor = canvasData.width / canvasData.naturalWidth;
@@ -120,7 +123,7 @@ const App = (function() {
             $(jUI.fileInfo.element).fadeIn(1000);
 
             // Event listener for setting dimensions
-            jUI.setDimensionBtn.element.addEventListener("click", () => {
+            jUI.setDimensionsBtn.element.addEventListener("click", () => {
 
               // Enable export
               jUI.exportBtn.element.classList.remove("disabled");
@@ -171,7 +174,9 @@ const App = (function() {
               ipc.updateOutputInfo((info) => {
                 jUI.updateOutputInfo(info);
               });
-            });
+              
+              jUI.setDimensionsBtn.element.disabled = true;
+            }, { once: true }); // once: true to prevent unnecessary eventlisteners clogging up the ipc
 
             // Event listener for export button
             jUI.exportBtn.element.addEventListener("click", () => {
@@ -189,7 +194,9 @@ const App = (function() {
                 // Send cropped image data to main process
                 ipc.exportImage(croppedImage);
               }
-            });  
+
+              jUI.exportBtn.element.disabled = true;
+            }, { once: true }); // one export per crop to prevent eventlisteners hanging around  
           }
         });
       // .. else replace cropper with new image
@@ -198,10 +205,11 @@ const App = (function() {
           jUI.reset();
           cropper.replace(imgPath);
         });
-      }
+      }        
     }
     catch {
       jUI.showAlert("Select an image first..", "bg-danger");
     }
   });
 })();
+

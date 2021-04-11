@@ -23,6 +23,7 @@ let mainWindow;
 let aboutWindow;
 let settingsWindow;
 
+let exportFileName;
 let userPreferences;
 let defaultPreferences = {
   path: `${os.homedir}`,
@@ -166,6 +167,8 @@ ipcMain.on("main:exportimage", (e, imageData) => {
 // Get source file name/target dimensions and set the export file name string
 ipcMain.on("main:setexportfilename",  (e, data) => {  
   
+  console.log(data.sourceFileName);
+
   if(userPreferences.filename === "Use original") {
     // Cut the extension from file name
     let pos = data.sourceFileName.lastIndexOf(".");
