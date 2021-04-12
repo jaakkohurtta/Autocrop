@@ -185,14 +185,22 @@ ipcMain.on("main:setexportfilename",  (e, data) => {
 });
 
 // Set the export path
-ipcMain.on("settings:setexportpath", async () => {  
+ipcMain.on("settings:setexportpath", async () => {
+
+  /*
     let exportPath = new Promise((resolve, reject) => {
       dialog.showOpenDialog(settingsWindow, { title: "Choose export location", properties: ["openDirectory"]})
         .then(res => resolve(res.filePaths))
         .catch(err => reject(err));
     });
+  */
 
-    settingsWindow.webContents.send("settings:getexportpath", await exportPath); // Send export path back to settingsWindow
+  let exportPath = await dialog.showOpenDialog(settingsWindow, { 
+    title: "Choose export location", 
+    properties: ["openDirectory"],
+  });
+
+  settingsWindow.webContents.send("settings:getexportpath", await exportPath.filePaths); // Send export path back to settingsWindow
 });
 
 // Apply user preferences
