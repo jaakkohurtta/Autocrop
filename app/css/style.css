@@ -1,18 +1,24 @@
+:root {
+  box-sizing: border-box;
+}
+
 .form-control-file:focus {
   border-color: black;
   box-shadow: 0 1px 1px black, 0 1px 4px black;
   outline: 0 none;
 }
 
+#imgElement {
+  display: none;
+}
 .img-container {
   display: block;
   max-width: 100%;
 }
-
 .img-container img {
   width: 100%;
 }
 
-#file-info, #alert-msg {
-  display: none;
+#alertMsg {
+  font-size: 18px;
 }

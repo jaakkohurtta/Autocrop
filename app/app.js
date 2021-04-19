@@ -1,215 +1,277 @@
-import { uiElement } from "./modules/ui-element.mjs";
 import Cropper from "../node_modules/cropperjs/dist/cropper.esm.js";
 
 const ipc = window.ipc;
 
-// UI
-const jUI = (function() {
-  const [fileInfo, alertMsg, selectBtn, sourceImg, imgContainer, setDimensionsBtn, exportBtn, imageWidth, imageHeight, imageAspectRatio, 
-        targetWidth, targetHeight, targetAspectRatio, cropWidth, cropHeight, cropAspectRatio, outputInfo] = 
-        ["file-info", "alert-msg", "select-btn", "source-img", "img-container", "set-dimensions-btn", "export-btn", "image-width", "image-height", "image-aspect-ratio", "target-width", "target-height", "target-aspect-ratio", "crop-width", "crop-height", "crop-aspect-ratio", "output-info"].map(id => new uiElement(document.getElementById(id)));
-  let imgElement = new uiElement(document.createElement("img"));
+class UI {
+    constructor() {
+      this.inputExportWidth = document.getElementById("inputExportWidth"),
+      this.inputExportHeight = document.getElementById("inputExportHeight"),
+      this.importBtn  = document.getElementById("importBtn"),
+      this.sourceImg = document.getElementById("sourceImg");
+      this.imgContainer = document.getElementById("imgContainer");
+      this.fileInfo = document.getElementById("fileInfo");
+      this.exportInfo = document.getElementById("exportInfo");
+      this.exportBtn = document.getElementById("exportBtn");
+      this.alertMsg = document.getElementById("alertMsg");
 
-  function showAlert(msg, className) {
-    alertMsg.element.classList.add(className);
-    alertMsg.textContent = msg;
-    $(alertMsg.element).fadeIn(200);
+      this.imageWidth = document.getElementById("imageWidth");
+      this.imageHeight = document.getElementById("imageHeight");
+      this.imageAspectRatio = document.getElementById("imageAspectRatio");
 
-    //Remove Alert after time-out and reset div
-    setTimeout(() => {
-      $(alertMsg.element).fadeOut(400, () => { 
-        alertMsg.reset();
-      }); 
-      }, 3000);
-  }
+      this.cropWidth = document.getElementById("cropWidth");
+      this.cropHeight = document.getElementById("cropHeight");
+      this.cropAspectRatio = document.getElementById("cropAspectRatio");
 
-  function updateOutputInfo(newInfo) {
-    outputInfo.reset();
-    outputInfo.textContent += newInfo;
-  }
+      this.exportWidth = document.getElementById("exportWidth");
+      this.exportHeight = document.getElementById("exportHeight");
+      this.exportAspectRatio = document.getElementById("exportAspectRatio");
 
-  function reset() {
-    // imgContainer.reset();
-    imageWidth.reset();
-    imageHeight.reset();
-    imageAspectRatio.reset();
-    targetWidth.value = "";
-    targetHeight.value = "";
-    targetAspectRatio.reset();
-    cropWidth.reset();
-    cropHeight.reset();
-    cropAspectRatio.reset();
-    outputInfo.reset();
-    exportBtn.reset();
-    setDimensionsBtn.reset();
-  }
-
-  return {
-    fileInfo, outputInfo,
-    alertMsg,
-    sourceImg,
-    imgContainer,
-    setDimensionsBtn, selectBtn, exportBtn, 
-    imageWidth, imageHeight, imageAspectRatio,
-    targetWidth, targetHeight, targetAspectRatio,
-    cropWidth, cropHeight, cropAspectRatio,
-    imgElement,
-    showAlert,
-    reset,
-    updateOutputInfo
-  }
-})();
-
-// App
-const App = (function() {
-
-  let cropper,
-      imgName,
-      imgPath;
-  
-  // Listen
-  ipc.alertImageReady((msg) => {
-    jUI.showAlert(msg, "bg-success");
-  });
-
-  ipc.alertSettingsSaved((data) => {
-    jUI.showAlert(data.msg, "bg-success");
-    jUI.updateOutputInfo(data.outputinfo);
-  });
-
-  // Event listener to auto-click select when choosing image
-  jUI.sourceImg.element.addEventListener("change", () => {
-    if(jUI.sourceImg.element.files.length > 0) {
-      jUI.selectBtn.element.click();
+      this.imgElement = document.getElementById("imgElement");
     }
-  });
 
-  // Event listener for select button
-  jUI.selectBtn.element.addEventListener("click", () => {
-    try {
-      imgPath = jUI.sourceImg.element.files[0].path;
-      imgName = jUI.sourceImg.element.files[0].name;
+    // Display info on UI
+    displayImageInfo(imageWidth, imageHeight, imageAspectRatio, cropWidth, cropHeight, cropAspectRatio, exportWidth, exportHeight, exportAspectRatio) {
+      this.imageWidth.textContent = `Image Width: ${imageWidth}`;
+      this.imageHeight.textContent = `Image Height: ${imageHeight}`;
+      this.imageAspectRatio.textContent = `Image Aspect Ratio: ${imageAspectRatio.toFixed(2)}`;
 
-      jUI.imgElement.element.setAttribute("src", imgPath);
-      jUI.imgContainer.element.appendChild(jUI.imgElement.element);
+      this.cropWidth.textContent = `Crop Width: ${cropWidth.toFixed(0)}`;
+      this.cropHeight.textContent = `Crop Height: ${cropHeight.toFixed(0)}`;
+      this.cropAspectRatio.textContent = `Crop Aspect Ratio: ${cropAspectRatio.toFixed(5)}`;
 
-      // If cropper is undefined create new cropper from image..
-      if(cropper === undefined) {
-        cropper = new Cropper(jUI.imgElement.element, {
-          autoCrop: false,
-          cropBoxResizable: false,
-          zoomable: false,
-          scalable: false,
-          viewMode: 3,
-          ready() {
-            let imgData = cropper.getImageData();
-            let canvasData = cropper.getCanvasData();
+      this.exportWidth.textContent = `Export Width: ${exportWidth.toFixed(0)}`;
+      this.exportHeight.textContent = `Export Height: ${exportHeight.toFixed(0)}`;
+      this.exportAspectRatio.textContent = `Export Aspect Ratio: ${exportAspectRatio.toFixed(5)}`;
 
-            // Scale factor to scale crop box
-            let scaleFactor = canvasData.width / canvasData.naturalWidth;
+      this.checkAspectRatios();
+    }
 
-            let targetWidth, targetHeight, targetAspectRatio,
-                cropWidth, cropHeight, cropAspectRatio, cropLongEdge;
+    // Update crop dimensions on UI
+    updateCropBoxDimensions(newWidth, newHeight) {
+      this.cropWidth.textContent = `Crop Width: ${newWidth.toFixed(0)}`;
+      this.cropHeight.textContent = `Crop Height: ${newHeight.toFixed(0)}`;
+      this.checkAspectRatios();
+    }
 
-            // Calculate image aspect ratio
-            let imageAspectRatio = imgData.naturalWidth / imgData.naturalHeight;
+    // Check if crop aspect ratio and export aspect ratio match
+    checkAspectRatios() {
+      // Get aspect ratios from UI
+      let cAr = parseFloat(this.cropAspectRatio.textContent.slice(-7));
+      let eAr = parseFloat(this.exportAspectRatio.textContent.slice(-7));
 
-            // Write image info to page
-            jUI.imageWidth.textContent = `Image Width: ${imgData.naturalWidth}`;
-            jUI.imageHeight.textContent = `Image Height: ${imgData.naturalHeight}`;
-            jUI.imageAspectRatio.textContent = `Image Aspect Ratio: ${imageAspectRatio.toFixed(2)}`;
+      if(cAr === eAr) {
+        this.classList("remove", "bg-warning", this.cropAspectRatio, this.exportAspectRatio);
+        this.classList("add", "bg-success", this.cropAspectRatio, this.exportAspectRatio);
+      } else {
+        this.classList("remove", "bg-success", this.cropAspectRatio, this.exportAspectRatio);
+        this.classList("add", "bg-warning", this.cropAspectRatio, this.exportAspectRatio);
+      }
+    }
 
-            // Some jQuery Magic
-            $(jUI.fileInfo.element).fadeIn(1000);
+    updateExportInfo(newInfo) {
+      this.exportInfo.textContent = `Export location: ${newInfo}`;
+    }
 
-            // Event listener for setting dimensions
-            jUI.setDimensionsBtn.element.addEventListener("click", () => {
+    clearImportForm() {
+      this.inputExportWidth.value = "";
+      this.inputExportHeight.value = "";
+    }
 
-              // Enable export
-              jUI.exportBtn.element.classList.remove("disabled");
-              jUI.exportBtn.element.disabled = false;
-
-              targetWidth = parseInt(jUI.targetWidth.element.value);
-              targetHeight = parseInt(jUI.targetHeight.element.value);
-              targetAspectRatio = targetWidth / targetHeight;
-
-              // Set crop box long edge
-              targetAspectRatio >= imageAspectRatio ? cropLongEdge = "width" : cropLongEdge = "height";
-
-              // Check cropLongEdge to set Crop Box dimensions
-              // We do this so that crop box dimensions dont exceed image dimensions
-              if(cropLongEdge === "width") {
-                cropWidth = imgData.naturalWidth;
-                cropHeight = targetHeight + ((imgData.naturalWidth - targetWidth) / targetAspectRatio);
-                cropAspectRatio = cropWidth / cropHeight;
-              } else {
-                cropHeight = imgData.naturalHeight;
-                cropWidth = targetWidth + ((imgData.naturalHeight - targetHeight) * targetAspectRatio);
-                cropAspectRatio = cropWidth / cropHeight;
-              }
-
-              // Check that aspect ratios match and color the UI accordingly
-              if(targetAspectRatio.toFixed(10) === cropAspectRatio.toFixed(10)) {
-                jUI.targetAspectRatio.element.classList.add("bg-info");
-                jUI.cropAspectRatio.element.classList.add("bg-info");
-              } else {
-                jUI.targetAspectRatio.element.classList.add("bg-warning");
-                jUI.cropAspectRatio.element.classList.add("bg-warning");
-              }
-              
-              jUI.targetAspectRatio.textContent = `Target Aspect Ratio: ${targetAspectRatio.toFixed(4)}`; 
-              jUI.cropWidth.textContent = `Crop Box Width: ${cropWidth.toFixed(0)}`;
-              jUI.cropHeight.textContent = `Crop Box Height: ${cropHeight.toFixed(0)}`;
-              jUI.cropAspectRatio.textContent = `Crop Aspect Ratio: ${cropAspectRatio.toFixed(4)}`;
-
-              // Set crop box
-              this.cropper.crop();
-              this.cropper.setCropBoxData({ "left": canvasData.left, "top": canvasData.top, "width": cropWidth*scaleFactor, "height": cropHeight*scaleFactor });
-              
-              // Send source file name+suffix to main process and update output info in return
-              ipc.setExportFileName({ 
-                sourceFileName: imgName, 
-                suffix: `_${targetWidth}x${targetHeight}` 
-                });
-              ipc.updateOutputInfo((info) => {
-                jUI.updateOutputInfo(info);
-              });
-              
-              jUI.setDimensionsBtn.element.disabled = true;
-            }, { once: true }); // once: true to prevent unnecessary eventlisteners clogging up the ipc
-
-            // Event listener for export button
-            jUI.exportBtn.element.addEventListener("click", () => {
-              if(jUI.exportBtn.element.classList.contains("disabled")) {
-                jUI.showAlert("Please set desired crop first!", "bg-danger");
-              } else {
-                let croppedImage = this.cropper.getCroppedCanvas({
-                  fillColor: "#fff",
-                  width: targetWidth,
-                  height: targetHeight,
-                  imageSmoothingEnabled: true,
-                  imageSmoothingQuality: "high",
-                }).toDataURL("image/jpg", 1);
-
-                // Send cropped image data to main process
-                ipc.exportImage(croppedImage);
-              }
-
-              jUI.exportBtn.element.disabled = true;
-            }, { once: true }); // one export per crop to prevent eventlisteners hanging around  
+    // Add or remove a class to an element
+    classList(option, className, ...elements) {
+      if(option === "add") {
+        elements.forEach(element => {
+          if(!element.classList.contains(className)) { 
+            element.classList.add(className);
           }
         });
-      // .. else replace cropper with new image
-      } else {
-        $(jUI.fileInfo.element).fadeOut(200, () => {
-          jUI.reset();
-          cropper.replace(imgPath);
+      }
+      if(option === "remove") {
+        elements.forEach(element => {
+          if(element.classList.contains(className)) { 
+            element.classList.remove(className);
+          }
         });
-      }        
+      }
     }
-    catch {
-      jUI.showAlert("Select an image first..", "bg-danger");
-    }
-  });
-})();
 
+    // Display alert msgs in UI
+    showAlert(msg, className) {
+      this.classList("add", className, this.alertMsg);
+      alertMsg.textContent = msg;
+      $(alertMsg).fadeIn(200);
+  
+      // Remove alert after a timeout
+      setTimeout(() => {
+        $(alertMsg).fadeOut(400, () => { 
+          this.alertMsg.textContent = "";
+          this.classList("remove", className, this.alertMsg);
+        }); 
+        }, 4000);
+    }
+  
+}
+
+const App = function() {
+
+  const ui = new UI();
+  
+  //#region Private vars
+  let cropper;
+
+  let exportWidth,
+      exportHeight,
+      exportAspectRatio,
+      adjustedCropWidth,
+      adjustedCropHeight;
+
+  let sourceImagePath,
+      sourceImageFileName;  
+  //#endregion
+  
+  const icp = function() {
+    ipc.alertImageReady((msg) => {
+      ui.showAlert(msg, "bg-success");
+    });
+  
+    ipc.alertSettingsSaved((data) => {
+      ui.showAlert(data.msg, "bg-success");
+      ui.updateOutputInfo(data.outputinfo);
+    });
+  }
+
+  const loadEventListeners = function() {
+    ui.importBtn.addEventListener("click", importImage);
+    ui.exportBtn.addEventListener("click", exportImage);
+
+    // Listen for Cropper events
+    ui.imgElement.addEventListener("ready", cropReady);
+    ui.imgElement.addEventListener("crop", cropAdjust);
+    ui.imgElement.addEventListener("cropend", cropEnd);
+
+  }
+
+  // Import image and set export dimensions
+  const importImage = function() {
+    // Form validity check
+    if(ui.sourceImg.files.length === 0 || ui.inputExportWidth.value === "" || ui.inputExportHeight.value === "") {
+      ui.showAlert("Fill in all fields before trying to crop..", "bg-warning");
+      return;
+    }
+
+    ui.imgElement.style.display = "block";
+
+    exportWidth = parseInt(ui.inputExportWidth.value);
+    exportHeight = parseInt(ui.inputExportHeight.value);
+    exportAspectRatio = exportWidth / exportHeight;
+
+    sourceImagePath = ui.sourceImg.files[0].path;
+    sourceImageFileName = ui.sourceImg.files[0].name;
+
+    // Set imported image to img element for cropper
+    ui.imgElement.setAttribute("src", sourceImagePath);
+ 
+    // Create cropper from imported image
+    if(cropper === undefined) {
+      cropper = new Cropper(imgElement, {
+        autoCrop: true,
+        autoCropArea: 1,
+        cropBoxResizable: true,
+        zoomable: false,
+        scalable: false,
+        aspectRatio: exportAspectRatio,
+        viewMode: 3,
+      });
+    } else {
+      cropper.setAspectRatio(exportAspectRatio);
+      cropper.replace(sourceImagePath);
+    }
+
+    // Clear input form
+    ui.clearImportForm();
+  }
+
+  // Export image
+  const exportImage = function() {
+    let croppedImage = cropper.getCroppedCanvas({
+      fillColor: "#fff",
+      width: exportWidth,
+      height: exportHeight,
+      imageSmoothingEnabled: true,
+      imageSmoothingQuality: "high",
+    }).toDataURL("image/jpg", 1);
+
+    // Send cropped image data to main process
+    ipc.exportImage(croppedImage);
+  }
+
+  // Crop Image
+  const cropReady = function() {
+
+    // Get data from cropper
+    let sourceImageData = cropper.getImageData();
+    let cropBoxData = cropper.getData();
+
+    let cropWidth = cropBoxData.width;
+    let cropHeight = cropBoxData.height;
+    let cropAspectRatio = cropWidth / cropHeight;
+
+    console.log(cropWidth, cropHeight, cropAspectRatio);
+
+    // If export dimensions are greater than actual image dimension adjust accordingly
+    if(exportWidth > sourceImageData.naturalWidth || exportHeight > sourceImageData.naturalHeight) {
+      exportWidth = cropWidth;
+      exportHeight = cropHeight;
+      exportAspectRatio = exportWidth / exportHeight;
+
+      ui.showAlert("WARNING: Export dimensions can't be bigger than source image dimensions", "bg-warning");
+    }
+
+    let imageAspectRatio = sourceImageData.naturalWidth / sourceImageData.naturalHeight;
+
+    // Display Image/Crop/Export info in UI
+    ui.displayImageInfo(sourceImageData.naturalWidth, sourceImageData.naturalHeight, imageAspectRatio, 
+                       cropWidth, cropHeight, cropAspectRatio, 
+                       exportWidth, exportHeight, exportAspectRatio);
+
+    ui.classList("remove", "d-none", ui.fileInfo);
+
+
+    // Send file name and dimension to main process
+    ipc.setExportFileName({ 
+      sourceFileName: sourceImageFileName, 
+      suffix: `_${exportWidth}x${exportHeight}` 
+      });
+    ipc.updateExportInfo((info) => ui.updateExportInfo(info));
+  }
+
+  const cropAdjust = function(e) {
+    adjustedCropWidth = e.detail.width;
+    adjustedCropHeight = e.detail.height;
+
+    ui.updateCropBoxDimensions(adjustedCropWidth, adjustedCropHeight);
+  }
+  
+  const cropEnd = function(e) {
+    // Check if new crop box smaller than desired export
+    if(adjustedCropWidth < exportWidth || adjustedCropHeight < exportHeight) {
+      ui.exportBtn.disabled = true;
+      ui.classList("add", "bg-warning", ui.cropWidth, ui.cropHeight);
+      ui.showAlert("WARNING: Selected crop is smaller than desired dimensions", "bg-warning");
+    } else {
+      ui.exportBtn.disabled = false;
+      ui.classList("remove", "bg-warning", ui.cropWidth, ui.cropHeight);
+    }   
+  }
+
+  // Public methods 
+  return {
+    init: function() {
+      loadEventListeners();
+      icp();
+    }
+  }
+
+}();
+
+App.init();

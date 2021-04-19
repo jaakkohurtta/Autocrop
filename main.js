@@ -1,6 +1,6 @@
 /*
  // Handle setupevents as quickly as possible
- const setupEvents = require('./installers/setupEvents')
+ const setupEvents = require("./installers/setupEvents.js");
  if (setupEvents.handleSquirrelEvent()) {
     // Squirrel event handled and app will exit in 1000ms, so don't do anything else
     return;
@@ -167,7 +167,7 @@ ipcMain.on("main:exportimage", (e, imageData) => {
 // Get source file name/target dimensions and set the export file name string
 ipcMain.on("main:setexportfilename",  (e, data) => {  
   
-  console.log(data.sourceFileName);
+   // console.log(data.sourceFileName);
 
   if(userPreferences.filename === "Use original") {
     // Cut the extension from file name
@@ -181,20 +181,11 @@ ipcMain.on("main:setexportfilename",  (e, data) => {
   if(userPreferences.suffix === "Dimensions") {
     exportFileName += data.suffix;
   }
-  mainWindow.webContents.send("main:updateoutputinfo", `${userPreferences.path}\\${exportFileName}.jpg`); // Send path back to settings window
+  mainWindow.webContents.send("main:updateexportinfo", `${userPreferences.path}\\${exportFileName}.jpg`); // Send path back to settings window
 });
 
 // Set the export path
 ipcMain.on("settings:setexportpath", async () => {
-
-  /*
-    let exportPath = new Promise((resolve, reject) => {
-      dialog.showOpenDialog(settingsWindow, { title: "Choose export location", properties: ["openDirectory"]})
-        .then(res => resolve(res.filePaths))
-        .catch(err => reject(err));
-    });
-  */
-
   let exportPath = await dialog.showOpenDialog(settingsWindow, { 
     title: "Choose export location", 
     properties: ["openDirectory"],

@@ -28,8 +28,8 @@ contextBridge.exposeInMainWorld("ipc", {
     setExportFileName: (data) => {
       ipcRenderer.send("main:setexportfilename", data);
     }, 
-    updateOutputInfo: (info) => {
-      ipcRenderer.on("main:updateoutputinfo", (event, ...args) => info(...args));
+    updateExportInfo: (info) => {
+      ipcRenderer.on("main:updateexportinfo", (event, ...args) => info(...args));
     },
     alertImageReady: (msg) => {
       ipcRenderer.on("alert:imageready", (event, ...args) => msg(...args));
