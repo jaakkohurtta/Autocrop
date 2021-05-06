@@ -14,7 +14,6 @@ The example below will create an 897x539 image with the chosen crop from the sou
 Planned features that may or may not happen include
 * Drag n Drop functionality
 * Exif integration
-* Some kind of batch processing
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
